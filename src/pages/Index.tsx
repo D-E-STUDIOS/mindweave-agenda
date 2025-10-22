@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoteCard } from "@/components/NoteCard";
 import { TaskCard } from "@/components/TaskCard";
+import { ProjectCard } from "@/components/ProjectCard";
 import { AddNoteDialog } from "@/components/AddNoteDialog";
+import { AddProjectDialog } from "@/components/AddProjectDialog";
+import { CalendarView } from "@/components/CalendarView";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, LogOut, Sparkles, CheckCircle2, FileText } from "lucide-react";
+import { Plus, LogOut, Sparkles, CheckCircle2, FileText, FolderKanban, Calendar as CalendarIcon } from "lucide-react";
 
 interface Note {
   id: string;
@@ -24,13 +27,27 @@ interface Task {
   completed: boolean;
   priority: string;
   due_date?: string;
+  project_id?: string;
+}
+
+interface Project {
+  id: string;
+  title: string;
+  description?: string;
+  color: string;
+  start_date?: string;
+  end_date?: string;
+  completed: boolean;
+  created_at: string;
 }
 
 const Index = () => {
   const [session, setSession] = useState<any>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [showAddNote, setShowAddNote] = useState(false);
+  const [showAddProject, setShowAddProject] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -53,6 +70,7 @@ const Index = () => {
     if (session) {
       fetchNotes();
       fetchTasks();
+      fetchProjects();
     }
   }, [session]);
 
@@ -87,6 +105,23 @@ const Index = () => {
       });
     } else {
       setTasks(data || []);
+    }
+  };
+
+  const fetchProjects = async () => {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch projects",
+        variant: "destructive",
+      });
+    } else {
+      setProjects(data || []);
     }
   };
 
@@ -205,6 +240,46 @@ const Index = () => {
     }
   };
 
+  const handleToggleProject = async (projectId: string, completed: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ completed: !completed })
+        .eq("id", projectId);
+
+      if (error) throw error;
+
+      fetchProjects();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      const { error } = await supabase.from("projects").delete().eq("id", projectId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Project deleted",
+      });
+
+      fetchProjects();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   };
@@ -223,6 +298,8 @@ const Index = () => {
 
   const activeTasks = tasks.filter((t) => !t.completed);
   const completedTasks = tasks.filter((t) => t.completed);
+  const activeProjects = projects.filter((p) => !p.completed);
+  const completedProjects = projects.filter((p) => p.completed);
 
   return (
     <div className="min-h-screen p-4 pb-20">
@@ -249,7 +326,7 @@ const Index = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="glass-card p-4 rounded-xl">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <FileText className="w-4 h-4" />
@@ -266,32 +343,45 @@ const Index = () => {
               {activeTasks.length}/{tasks.length}
             </p>
           </div>
+          <div className="glass-card p-4 rounded-xl">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <FolderKanban className="w-4 h-4" />
+              <span className="text-sm">Projects</span>
+            </div>
+            <p className="text-2xl font-bold">
+              {activeProjects.length}/{projects.length}
+            </p>
+          </div>
         </div>
 
         {/* Content */}
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="w-full glass-card mb-6">
-            <TabsTrigger value="all" className="flex-1">
-              All
-            </TabsTrigger>
-            <TabsTrigger value="notes" className="flex-1">
-              Notes
-            </TabsTrigger>
-            <TabsTrigger value="tasks" className="flex-1">
-              Tasks
-            </TabsTrigger>
+          <TabsList className="w-full glass-card mb-6 grid grid-cols-5">
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="notes">Notes</TabsTrigger>
+            <TabsTrigger value="tasks">Tasks</TabsTrigger>
+            <TabsTrigger value="projects">Projects</TabsTrigger>
+            <TabsTrigger value="calendar">Calendar</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="space-y-4">
-            {notes.length === 0 && tasks.length === 0 ? (
+            {notes.length === 0 && tasks.length === 0 && projects.length === 0 ? (
               <div className="glass-card p-12 rounded-xl text-center">
                 <Sparkles className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground">
-                  No notes or tasks yet. Start capturing your thoughts!
+                  No notes, tasks, or projects yet. Start capturing your thoughts!
                 </p>
               </div>
             ) : (
               <>
+                {activeProjects.map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    onToggle={() => handleToggleProject(project.id, project.completed)}
+                    onDelete={() => handleDeleteProject(project.id)}
+                  />
+                ))}
                 {activeTasks.map((task) => (
                   <TaskCard
                     key={task.id}
@@ -383,15 +473,75 @@ const Index = () => {
               </>
             )}
           </TabsContent>
+
+          <TabsContent value="projects" className="space-y-4">
+            {projects.length === 0 ? (
+              <div className="glass-card p-12 rounded-xl text-center">
+                <FolderKanban className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">
+                  No projects yet. Create your first project!
+                </p>
+              </div>
+            ) : (
+              <>
+                {activeProjects.length > 0 && (
+                  <>
+                    <h3 className="text-sm font-medium text-muted-foreground px-2">
+                      Active
+                    </h3>
+                    {activeProjects.map((project) => (
+                      <ProjectCard
+                        key={project.id}
+                        project={project}
+                        onToggle={() =>
+                          handleToggleProject(project.id, project.completed)
+                        }
+                        onDelete={() => handleDeleteProject(project.id)}
+                      />
+                    ))}
+                  </>
+                )}
+                {completedProjects.length > 0 && (
+                  <>
+                    <h3 className="text-sm font-medium text-muted-foreground px-2 mt-6">
+                      Completed
+                    </h3>
+                    {completedProjects.map((project) => (
+                      <ProjectCard
+                        key={project.id}
+                        project={project}
+                        onToggle={() =>
+                          handleToggleProject(project.id, project.completed)
+                        }
+                        onDelete={() => handleDeleteProject(project.id)}
+                      />
+                    ))}
+                  </>
+                )}
+              </>
+            )}
+          </TabsContent>
+
+          <TabsContent value="calendar">
+            <CalendarView tasks={tasks} projects={projects} />
+          </TabsContent>
         </Tabs>
 
-        {/* Floating Action Button */}
-        <Button
-          onClick={() => setShowAddNote(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-primary to-secondary shadow-lg glow-border hover:scale-110 transition-transform"
-        >
-          <Plus className="w-6 h-6" />
-        </Button>
+        {/* Floating Action Buttons */}
+        <div className="fixed bottom-6 right-6 flex flex-col gap-3">
+          <Button
+            onClick={() => setShowAddProject(true)}
+            className="w-14 h-14 rounded-full bg-gradient-to-r from-secondary to-primary shadow-lg glow-border hover:scale-110 transition-transform"
+          >
+            <FolderKanban className="w-6 h-6" />
+          </Button>
+          <Button
+            onClick={() => setShowAddNote(true)}
+            className="w-14 h-14 rounded-full bg-gradient-to-r from-primary to-secondary shadow-lg glow-border hover:scale-110 transition-transform"
+          >
+            <Plus className="w-6 h-6" />
+          </Button>
+        </div>
 
         <AddNoteDialog
           open={showAddNote}
@@ -400,6 +550,13 @@ const Index = () => {
             fetchNotes();
             fetchTasks();
           }}
+          userId={session.user.id}
+        />
+
+        <AddProjectDialog
+          open={showAddProject}
+          onOpenChange={setShowAddProject}
+          onProjectAdded={fetchProjects}
           userId={session.user.id}
         />
       </div>

@@ -44,6 +44,45 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          color: string | null
+          completed: boolean | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          start_date: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          completed?: boolean | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          completed?: boolean | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           completed: boolean | null
@@ -53,6 +92,7 @@ export type Database = {
           id: string
           note_id: string | null
           priority: string | null
+          project_id: string | null
           title: string
           updated_at: string
           user_id: string
@@ -65,6 +105,7 @@ export type Database = {
           id?: string
           note_id?: string | null
           priority?: string | null
+          project_id?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -77,6 +118,7 @@ export type Database = {
           id?: string
           note_id?: string | null
           priority?: string | null
+          project_id?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -87,6 +129,13 @@ export type Database = {
             columns: ["note_id"]
             isOneToOne: false
             referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
