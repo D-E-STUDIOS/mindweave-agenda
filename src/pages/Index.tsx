@@ -92,11 +92,33 @@ const Index = () => {
 
   const handleConvertToTask = async (noteId: string, noteContent: string) => {
     try {
+      toast({
+        title: "Analyzing...",
+        description: "AI is converting your note into an actionable task",
+      });
+
+      const { data: analysisData, error: analysisError } = await supabase.functions.invoke(
+        "analyze-note",
+        {
+          body: { content: noteContent },
+        }
+      );
+
+      if (analysisError) throw analysisError;
+
+      // Use AI-generated task or create a basic one
+      const taskData = analysisData?.tasks?.[0] || {
+        title: noteContent.substring(0, 100),
+        description: noteContent,
+        priority: "medium",
+      };
+
       const { error } = await supabase.from("tasks").insert({
         user_id: session.user.id,
         note_id: noteId,
-        title: noteContent.substring(0, 100),
-        priority: "medium",
+        title: taskData.title,
+        description: taskData.description || noteContent,
+        priority: taskData.priority || "medium",
       });
 
       if (error) throw error;
@@ -108,7 +130,7 @@ const Index = () => {
 
       toast({
         title: "Success",
-        description: "Note converted to task",
+        description: "Note converted to actionable task",
       });
 
       fetchNotes();
