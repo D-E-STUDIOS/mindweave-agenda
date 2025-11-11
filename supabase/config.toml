@@ -6,3 +6,6 @@ site_url = "https://778d50a4-7a1a-46ad-a47a-abb134e485c9.lovableproject.com"
 
 [functions.analyze-note]
 verify_jwt = true
+
+[functions.brain-insights]
+verify_jwt = true

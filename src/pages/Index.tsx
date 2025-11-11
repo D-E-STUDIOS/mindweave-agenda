@@ -9,8 +9,9 @@ import { ProjectCard } from "@/components/ProjectCard";
 import { AddNoteDialog } from "@/components/AddNoteDialog";
 import { AddProjectDialog } from "@/components/AddProjectDialog";
 import { CalendarView } from "@/components/CalendarView";
+import { BrainView } from "@/components/BrainView";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, LogOut, Sparkles, CheckCircle2, FileText, FolderKanban, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, LogOut, Sparkles, CheckCircle2, FileText, FolderKanban, Calendar as CalendarIcon, Brain } from "lucide-react";
 
 interface Note {
   id: string;
@@ -356,12 +357,13 @@ const Index = () => {
 
         {/* Content */}
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="w-full glass-card mb-6 grid grid-cols-5">
+          <TabsList className="w-full glass-card mb-6 grid grid-cols-6">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
             <TabsTrigger value="tasks">Tasks</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="calendar">Calendar</TabsTrigger>
+            <TabsTrigger value="brain">Brain</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="space-y-4">
@@ -524,6 +526,10 @@ const Index = () => {
 
           <TabsContent value="calendar">
             <CalendarView tasks={tasks} projects={projects} />
+          </TabsContent>
+
+          <TabsContent value="brain">
+            <BrainView notes={notes} />
           </TabsContent>
         </Tabs>
 
